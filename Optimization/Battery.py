@@ -18,11 +18,13 @@ class Battery():
         else:
             self.capacity -= kw*self.time_span
 
-Bateria = Battery(max_capacity=100,
-                  minimum_discharge=.2,
-                  time_span=5)
-print(Bateria.capacity)
-Bateria.charge(20)
-print(Bateria.capacity)
-Bateria.discharge(20)
-print(Bateria.capacity)
+if __name__=='__main__':
+
+    Bateria = Battery(max_capacity=100,
+                    minimum_discharge=.2,
+                    time_span=5)
+    print(Bateria.capacity)
+    Bateria.charge(20)
+    print(Bateria.capacity)
+    Bateria.discharge(20)
+    print(Bateria.capacity)
