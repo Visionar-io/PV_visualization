@@ -3,6 +3,7 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 import numpy as np
 import csv
+import requests
 
 class Aws:
     def __init__(self, bucket, prefix, local_time):
@@ -233,9 +234,74 @@ class Load:
             return energy_res, power_res
 
 class EnergyCosts():
-    def __init__(self):
-        pass
-     
+    def __init__(self, start_date, stop_date):
+        self.start_date = start_date
+        self.stop_date = stop_date
+        
+    def get_eneryg_costs(self):  
+        # Download the JSON file
+        dates = get_dates_between(self.start_date, self.stop_date)
+        output = []
+
+        for dates_item in dates:
+            url = "http://api.esios.ree.es/archives/70/download?date=" + dates_item
+            response = requests.get(url, timeout=30)
+            response.raise_for_status()
+            data = response.json()
+
+            # Depending on structure: try to find the list
+            if isinstance(data, dict):
+                if "PVPC" in data:
+                    records = data["PVPC"]
+                elif "data" in data:
+                    records = data["data"]
+                else:
+                    records = next((v for v in data.values() if isinstance(v, list)), [])
+            elif isinstance(data, list):
+                records = data
+            else:
+                raise ValueError("Unknown JSON structure")
+
+            # Extract Dia, Hora, PCB (with Hora simplified and PCB as float)
+            result = []
+            for r in records:
+                dia = r.get("Dia")
+                hora = r.get("Hora")
+                pcb = r.get("PCB")
+                if dia and hora and "PCB" in r:
+                    # Simplify Hora (e.g., "00-01" → 0)
+                    try:
+                        hora_simple = int(hora.split('-')[0])
+                    except Exception:
+                        hora_simple = None
+
+                    # Convert PCB to float
+                    try:
+                        pcb_float = float(str(pcb).replace(",", "."))
+                    except Exception:
+                        pcb_float = np.nan
+
+                    result.append([dia, hora_simple, pcb_float])
+
+            output.append(result)
+
+            print("Dia,Hora,PCB")
+            for dia, hora, pcb in result:
+                print(f"{dia},{hora},{pcb}")
+
+        # ---- Convert to NumPy structured array ----
+
+        # Flatten your list of lists [[dia, hora, pcb], ...]
+        flat_data = [item for sublist in output for item in sublist]
+
+        # Convert to structured NumPy array
+        arr = np.array(
+            [(str(d), int(h), float(p)) for d, h, p in flat_data],
+            dtype=[('Dia', 'U20'), ('Hora', 'i4'), ('PCB', 'f8')]
+        )
+
+        print(arr)
+        
 from datetime import datetime, timedelta, timezone
 
 def get_dates_between(start_date: str, end_date: str):
@@ -304,8 +370,10 @@ if __name__ == "__main__":
     KEY = "Carmelo" 
     LOCAL_TIME = "Atlantic/Canary"
     aws = Aws(BUCKET, KEY, LOCAL_TIME)
-    START_DATE = "2025-10-30"
+    START_DATE = "2025-10-29"
     STOP_DATE = "2025-10-30"
     NUMBER_PHASES = 3
     load = Load (START_DATE, STOP_DATE, NUMBER_PHASES, aws)
+    energy = EnergyCosts(START_DATE, STOP_DATE)
+    print(energy.get_eneryg_costs())
     print(load.compute_time_span(3600))
