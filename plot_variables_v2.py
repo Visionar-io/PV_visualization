@@ -24,6 +24,7 @@ except Exception:
 BUCKET = os.getenv("BUCKET", "pm-metering")
 PREFIX = os.getenv("PREFIX", "Carmelo/").rstrip("/") + "/"
 DATE_STR = os.getenv("DATE")  # YYYY-MM-DD
+DATE_STR = os.getenv("DATE")  # YYYY-MM-DD
 LOCAL_TZ_NAME = os.getenv("TZ", "Atlantic/Canary")
 
 # Optional: fixed resample seconds. If unset, we auto-detect min step.
