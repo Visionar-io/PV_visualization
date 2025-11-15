@@ -375,5 +375,13 @@ if __name__ == "__main__":
     NUMBER_PHASES = 3
     load = Load (START_DATE, STOP_DATE, NUMBER_PHASES, aws)
     energy = EnergyCosts(START_DATE, STOP_DATE)
-    print(energy.get_eneryg_costs())
-    print(load.compute_time_span(3600))
+    energy, power = load.download_data()
+    print("Energy header:", energy["header"])
+    print("Energy shape:", energy["data"].shape)
+    print("First 5 energy rows:\n", energy["data"][:5])
+
+    print("Power header:", power["header"])
+    print("Power shape:", power["data"].shape)
+    print("First 5 power rows:\n", power["data"][:5])
+    # print(energy.get_eneryg_costs())
+    # print(load.compute_time_span(3600))
